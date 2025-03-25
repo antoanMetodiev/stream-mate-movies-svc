@@ -22,9 +22,9 @@ public class BeanConfig {
     @Bean
     public Executor asyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);  // Минимален брой нишки
-        executor.setMaxPoolSize(10);  // Максимален брой нишки
-        executor.setQueueCapacity(100); // Дължина на опашката
+        executor.setCorePoolSize(20);  // Минимален брой нишки
+        executor.setMaxPoolSize(80);  // Максимален брой нишки
+        executor.setQueueCapacity(500); // Дължина на опашката
         executor.setThreadNamePrefix("AsyncThread-");
         executor.initialize();
         return executor;
