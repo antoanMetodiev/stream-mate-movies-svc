@@ -27,7 +27,14 @@ public class MovieController {
         this.movieService = movieService;
     }
 
-    @GetMapping("/get-next-10-comments")
+    @DeleteMapping("/delete-movie-comment")
+    public void deleteMovieComment(@RequestParam String commentId,
+                                   @RequestParam String movieId) {
+
+        this.movieService.deleteMovieComment(commentId, movieId);
+    }
+
+    @GetMapping("/get-next-10-movie-comments")
     public List<MovieComment> getNext10Comments(@RequestParam int order,
                                                 @RequestParam String currentCinemaRecordId) {
 
