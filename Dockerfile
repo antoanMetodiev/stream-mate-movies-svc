@@ -13,8 +13,8 @@ RUN apt-get update --allow-releaseinfo-change \
 COPY build.gradle .
 COPY settings.gradle .
 
-# Изтегляне на зависимостите
-RUN gradle --no-daemon build --offline
+# Изтегляне на зависимостите и изграждане на проекта
+RUN gradle build --no-daemon
 
 # Копираме изходния код
 COPY src ./src
