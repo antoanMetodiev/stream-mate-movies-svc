@@ -45,8 +45,8 @@ public class MovieComment {
     @Column(nullable = false, name = "created_at")
     private String createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.ALL)
-    @JoinColumn(referencedColumnName = "id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "movie_id", nullable = false)
     @JsonBackReference
     private Movie movie;
 }
