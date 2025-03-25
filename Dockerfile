@@ -1,27 +1,30 @@
-# Стъпка 1: Избиране на базовия образ (Java 17 в този пример)
+# Стъпка 1: Избиране на базовия образ
 FROM openjdk:17-jdk-slim AS build
 
-# Стъпка 2: Задаваме директорията за работата на контейнера
+# Задаваме работната директория
 WORKDIR /app
 
-# Стъпка 3: Копираме pom.xml и изтегляме зависимостите, за да се възползваме от кеширането на слоевете
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
+# Копираме build.gradle и settings.gradle (ако имаш такъв файл)
+COPY build.gradle .
+COPY settings.gradle .  
 
-# Стъпка 4: Копираме целия изходен код в контейнера
+# Изтегляме зависимостите
+RUN gradle --no-daemon build --offline
+
+# Копираме изходния код
 COPY src ./src
 
-# Стъпка 5: Билдване на приложението
-RUN mvn clean install -DskipTests
+# Билдване на приложението
+RUN gradle build --no-daemon
 
-# Стъпка 6: Създаване на минимален контейнер за изпълнение на Spring Boot приложението
+# Стъпка 2: Минимален контейнер за изпълнение на Spring Boot приложението
 FROM openjdk:17-jdk-slim
 
-# Стъпка 7: Задаваме директорията за приложението
+# Задаваме работната директория
 WORKDIR /app
 
-# Стъпка 8: Копираме само резултата от билдването (JAR файлът) от предишния слой
-COPY --from=build /app/target/myapp.jar /app/myapp.jar
+# Копираме JAR файла от build стъпката
+COPY --from=build /app/build/libs/myapp.jar /app/myapp.jar
 
-# Стъпка 9: Стартиране на приложението
+# Стартиране на приложението
 CMD ["java", "-jar", "myapp.jar"]
