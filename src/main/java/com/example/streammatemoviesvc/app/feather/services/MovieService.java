@@ -5,10 +5,10 @@ import com.example.streammatemoviesvc.app.commonData.models.enums.ImageType;
 import com.example.streammatemoviesvc.app.commonData.repositories.ActorRepository;
 import com.example.streammatemoviesvc.app.commonData.utils.UtilMethods;
 import com.example.streammatemoviesvc.app.feather.models.dtos.CinemaRecordResponse;
-import com.example.streammatemoviesvc.app.feather.models.dtos.PostCommentRequest;
 import com.example.streammatemoviesvc.app.feather.models.entities.Movie;
 import com.example.streammatemoviesvc.app.feather.models.entities.MovieComment;
 import com.example.streammatemoviesvc.app.feather.models.entities.MovieImage;
+import com.example.streammatemoviesvc.app.feather.repositories.MovieCommentRepository;
 import com.example.streammatemoviesvc.app.feather.repositories.MovieRepository;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -23,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -48,6 +47,7 @@ public class MovieService {
     private final HttpClient httpClient;
     private final ActorRepository actorRepository;
     private final MovieRepository movieRepository;
+    private final MovieCommentRepository movieCommentRepository;
 
     private final TransactionTemplate transactionTemplate;
     private final Executor asyncExecutor;
@@ -56,14 +56,122 @@ public class MovieService {
     public MovieService(HttpClient httpClient,
                         ActorRepository actorRepository,
                         MovieRepository movieRepository,
+                        MovieCommentRepository movieCommentRepository,
                         TransactionTemplate transactionTemplate,
                         Executor asyncExecutor) {
 
         this.httpClient = httpClient;
         this.actorRepository = actorRepository;
         this.movieRepository = movieRepository;
+        this.movieCommentRepository = movieCommentRepository;
         this.transactionTemplate = transactionTemplate;
         this.asyncExecutor = asyncExecutor;
+    }
+
+
+    public Page<CinemaRecordResponse> getEveryThirtyMovies(Pageable pageable) {
+        int size = pageable.getPageSize();
+        int offset = pageable.getPageNumber() * size;
+        List<Object[]> rawData = movieRepository.getThirthyMoviesRawData(size, offset);
+
+        List<CinemaRecordResponse> dtos = rawData.stream().map(obj ->
+                new CinemaRecordResponse(
+                        (UUID) obj[0],
+                        (String) obj[1],  // title
+                        (String) obj[2],  // posterImgURL
+                        (String) obj[3]   // releaseDate
+                )
+        ).toList();
+
+        return new PageImpl<>(dtos, pageable, dtos.size());
+    }
+
+    public long getAllMoviesCount() {
+        return this.movieRepository.count();
+    }
+
+    public Movie getConcreteMovieDetails(UUID id) {
+        return this.movieRepository.findById(id).orElseThrow();
+    }
+
+    public List<Movie> getMoviesByTitle(String title) {
+        return this.movieRepository.findByTitleOrSearchTagContainingIgnoreCase(title);
+    }
+
+    public long findMoviesCountByGenre(String genre) {
+        return this.movieRepository.findMoviesCountByGenre(genre);
+    }
+
+    public List<CinemaRecordResponse> getNextTwentyMoviesByGenre(String genre, Pageable pageable) {
+        int size = pageable.getPageSize();  // Получаваме размера на страницата (напр. 20)
+        int offset = pageable.getPageNumber() * size;  // Пресмятаме OFFSET (page * size)
+
+        List<Object[]> moviesByGenres = movieRepository.findByGenreNextTwentyMovies(genre, size, offset);
+        List<CinemaRecordResponse> dtos = moviesByGenres.stream().map(obj ->
+                new CinemaRecordResponse(
+                        (UUID) obj[0],
+                        (String) obj[1],  // title
+                        (String) obj[2],  // posterImgURL
+                        (String) obj[3]   // releaseDate
+                )
+        ).toList();
+
+        return dtos;
+    }
+
+    public long getSearchedMoviesCount(String title) {
+        return this.movieRepository.findMoviesCountByTitleOrSearchTagContainingIgnoreCase(title);
+    }
+
+    @Transactional
+    public void postComment(String authorUsername, String authorFullName,
+                            String authorImgURL, String commentText, double rating,
+                            String createdAt,
+                            String authorId,
+                            String movieId) {
+
+        UUID id = UUID.fromString(movieId);
+        Movie movie = this.movieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Movie is not found!"));
+
+        MovieComment comment = new MovieComment();
+        comment.setAuthorUsername(authorUsername);
+        comment.setAuthorFullName(authorFullName);
+        comment.setAuthorImgURL(authorImgURL);
+        comment.setCommentText(commentText);
+        comment.setRating(rating);
+        comment.setCreatedAt(createdAt);
+        comment.setMovie(movie);
+        comment.setAuthorId(UUID.fromString(authorId));
+
+        movie.getMovieComments().add(comment);
+        this.movieRepository.save(movie);
+    }
+
+    public List<MovieComment> getNext10Comments(int order, UUID currentCinemaRecordId) {
+        int offset = (order - 1) * 10;  // Преобразуване на order в offset
+        List<MovieComment> next10Comments = this.movieRepository.getNext10Comments(offset, currentCinemaRecordId);
+        return next10Comments;
+    }
+
+    @Transactional
+    public void deleteMovieComment(String commentId, String movieId) {
+        UUID currentMovieId = UUID.fromString(movieId);
+        UUID currentCommentId = UUID.fromString(commentId);
+
+        // Изтегляне на филма по ID
+        Movie movie = this.movieRepository.findById(currentMovieId)
+                .orElseThrow(() -> new RuntimeException("Movie not found!"));
+
+        MovieComment commentToDelete = movie.getMovieComments().stream()
+                .filter(comment -> comment.getId().equals(currentCommentId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Comment not found!"));
+
+        movie.getMovieComments().remove(commentToDelete);
+        this.movieCommentRepository.delete(commentToDelete);
+
+        this.movieRepository.save(movie);
     }
 
     @Async
@@ -206,6 +314,10 @@ public class MovieService {
 
     @Async
     public CompletableFuture<List<MovieImage>> extractDetailsImages(JsonArray backdropsJsonAr, ImageType imageType, int limit) {
+        if (backdropsJsonAr == null || imageType == null) {
+            return CompletableFuture.completedFuture(new ArrayList<>());
+        }
+
         List<MovieImage> backdropImages = new ArrayList<>();
 
         int count = 0;
@@ -274,91 +386,5 @@ public class MovieService {
 
             return true;
         });
-    }
-
-    public Page<CinemaRecordResponse> getEveryThirtyMovies(Pageable pageable) {
-        int size = pageable.getPageSize();
-        int offset = pageable.getPageNumber() * size;
-        List<Object[]> rawData = movieRepository.getThirthyMoviesRawData(size, offset);
-
-        List<CinemaRecordResponse> dtos = rawData.stream().map(obj ->
-                new CinemaRecordResponse(
-                        (UUID) obj[0],
-                        (String) obj[1],  // title
-                        (String) obj[2],  // posterImgURL
-                        (String) obj[3]   // releaseDate
-                )
-        ).toList();
-
-        return new PageImpl<>(dtos, pageable, dtos.size());
-    }
-
-
-    public long getAllMoviesCount() {
-        return this.movieRepository.count();
-    }
-
-    public Movie getConcreteMovieDetails(UUID id) {
-        return this.movieRepository.findById(id).orElseThrow();
-    }
-
-    public List<Movie> getMoviesByTitle(String title) {
-        return this.movieRepository.findByTitleOrSearchTagContainingIgnoreCase(title);
-    }
-
-    public long findMoviesCountByGenre(String genre) {
-        return this.movieRepository.findMoviesCountByGenre(genre);
-    }
-
-    public List<CinemaRecordResponse> getNextTwentyMoviesByGenre(String genre, Pageable pageable) {
-        int size = pageable.getPageSize();  // Получаваме размера на страницата (напр. 20)
-        int offset = pageable.getPageNumber() * size;  // Пресмятаме OFFSET (page * size)
-
-        List<Object[]> moviesByGenres = movieRepository.findByGenreNextTwentyMovies(genre, size, offset);
-        List<CinemaRecordResponse> dtos = moviesByGenres.stream().map(obj ->
-                new CinemaRecordResponse(
-                        (UUID) obj[0],
-                        (String) obj[1],  // title
-                        (String) obj[2],  // posterImgURL
-                        (String) obj[3]   // releaseDate
-                )
-        ).toList();
-
-        return dtos;
-    }
-
-    public long getSearchedMoviesCount(String title) {
-        return this.movieRepository.findMoviesCountByTitleOrSearchTagContainingIgnoreCase(title);
-    }
-
-    @Transactional
-    public void postComment(String authorUsername, String authorFullName,
-                            String authorImgURL, String commentText, double rating,
-                            String createdAt,
-                            String authorId,
-                            String movieId) {
-
-        UUID id = UUID.fromString(movieId);
-        Movie movie = this.movieRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Movie is not found!"));
-
-        MovieComment comment = new MovieComment();
-        comment.setAuthorUsername(authorUsername);
-        comment.setAuthorFullName(authorFullName);
-        comment.setAuthorImgURL(authorImgURL);
-        comment.setCommentText(commentText);
-        comment.setRating(rating);
-        comment.setCreatedAt(createdAt);
-        comment.setMovie(movie);
-        comment.setAuthorId(UUID.fromString(authorId));
-
-        movie.getMovieComments().add(comment);
-        this.movieRepository.save(movie);
-    }
-
-    public List<MovieComment> getNext10Comments(int order, UUID currentCinemaRecordId) {
-        int offset = (order - 1) * 10;  // Преобразуване на order в offset
-        List<MovieComment> next10Comments = this.movieRepository.getNext10Comments(offset, currentCinemaRecordId);
-        return next10Comments;
     }
 }
