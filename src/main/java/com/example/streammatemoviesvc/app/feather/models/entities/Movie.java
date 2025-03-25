@@ -39,9 +39,9 @@ public class Movie extends CinemaRecord {
     @JsonManagedReference
     private List<MovieImage> imagesList = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL, mappedBy = "movie")
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<MovieComment> movieComments;
+    private List<MovieComment> movieComments = new ArrayList<>();
 
     public void addAllImages(List<MovieImage> allImages) {
         allImages.forEach(image -> image.setMovie(this));
