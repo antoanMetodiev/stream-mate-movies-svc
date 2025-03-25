@@ -13,7 +13,7 @@ WORKDIR /app
 
 # Копираме build.gradle и settings.gradle (ако имаш такъв файл)
 COPY build.gradle .
-COPY settings.gradle .  # Ако използваш settings.gradle, ако не - може да я премахнеш
+COPY settings.gradle .
 
 # Изтегляме зависимостите
 RUN gradle --no-daemon build --offline
