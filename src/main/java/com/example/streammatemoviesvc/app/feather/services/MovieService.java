@@ -175,6 +175,30 @@ public class MovieService {
     }
 
     @Async
+    public CompletableFuture<List<MovieImage>> extractDetailsImages(JsonArray backdropsJsonAr, ImageType imageType, int limit) {
+        if (backdropsJsonAr == null || imageType == null) {
+            return CompletableFuture.completedFuture(new ArrayList<>());
+        }
+
+        List<MovieImage> backdropImages = new ArrayList<>();
+
+        int count = 0;
+        for (JsonElement jsonElement : backdropsJsonAr) {
+            MovieImage image = new MovieImage();
+
+            if (imageType.equals(ImageType.BACKDROP)) image.setImageType(ImageType.BACKDROP);
+            else image.setImageType(ImageType.POSTER);
+
+            backdropImages.add(image.setImageURL(jsonElement.getAsJsonObject().get("file_path")
+                    .getAsString()));
+
+            if (count++ == limit) break;
+        }
+
+        return CompletableFuture.completedFuture(backdropImages);
+    }
+
+    @Async
     public CompletableFuture<Void> searchForMovies(String movieName) {
         if (movieName.trim().isEmpty()) return new CompletableFuture<Void>();
 
@@ -310,30 +334,6 @@ public class MovieService {
 
             return true;
         }, asyncExecutor);
-    }
-
-    @Async
-    public CompletableFuture<List<MovieImage>> extractDetailsImages(JsonArray backdropsJsonAr, ImageType imageType, int limit) {
-        if (backdropsJsonAr == null || imageType == null) {
-            return CompletableFuture.completedFuture(new ArrayList<>());
-        }
-
-        List<MovieImage> backdropImages = new ArrayList<>();
-
-        int count = 0;
-        for (JsonElement jsonElement : backdropsJsonAr) {
-            MovieImage image = new MovieImage();
-
-            if (imageType.equals(ImageType.BACKDROP)) image.setImageType(ImageType.BACKDROP);
-            else image.setImageType(ImageType.POSTER);
-
-            backdropImages.add(image.setImageURL(jsonElement.getAsJsonObject().get("file_path")
-                    .getAsString()));
-
-            if (count++ == limit) break;
-        }
-
-        return CompletableFuture.completedFuture(backdropImages);
     }
 
     public void saveMovie(String cinemaRecTitle, String cinemaRecPosterImage, Movie movie) {

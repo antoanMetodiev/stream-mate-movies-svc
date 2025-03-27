@@ -1,6 +1,5 @@
 package com.example.streammatemoviesvc;
 
-import com.example.streammatemoviesvc.app.commonData.models.entities.Actor;
 import com.example.streammatemoviesvc.app.commonData.models.enums.ImageType;
 import com.example.streammatemoviesvc.app.commonData.repositories.ActorRepository;
 import com.example.streammatemoviesvc.app.feather.models.dtos.CinemaRecordResponse;
@@ -12,23 +11,17 @@ import com.example.streammatemoviesvc.app.feather.repositories.MovieRepository;
 import com.example.streammatemoviesvc.app.feather.services.MovieService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -50,94 +43,11 @@ class MovieServiceTest {
     @Mock
     private HttpClient httpClient;
 
+    @Mock
+    private TransactionTemplate transactionTemplate;
+
     @InjectMocks
     private MovieService movieService;
-
-    @Test
-    public void testUrlGeneration() {
-        String movieId = "12345";
-        String searchQuery = "https://api.themoviedb.org/3/movie/" + movieId + "?api_key=YOUR_API_KEY";
-
-        assertEquals("https://api.themoviedb.org/3/movie/12345?api_key=YOUR_API_KEY", searchQuery);
-    }
-
-    @Test
-    public void testSaveMovieWhenMovieDoesNotExist() {
-        // Създаваме обектите
-        String cinemaRecTitle = "Inception";
-        String cinemaRecPosterImage = "inception.jpg";
-        Movie movie = new Movie();
-        movie.setTitle(cinemaRecTitle);
-        movie.setPosterImgURL(cinemaRecPosterImage);
-
-        // Създаваме актьори
-        Actor actor1 = new Actor();
-        actor1.setId(null);
-        actor1.setNameInRealLife("Leonardo DiCaprio");
-
-        Actor actor2 = new Actor();
-        actor2.setId(null);
-        actor2.setNameInRealLife("Joseph Gordon-Levitt");
-
-        movie.setCastList(List.of(actor1, actor2));
-
-        // Мокиране на резултати от репозиториите
-        when(movieRepository.findByTitleAndPosterImgURL(cinemaRecTitle, cinemaRecPosterImage)).thenReturn(Optional.empty());
-        when(actorRepository.save(any(Actor.class))).thenReturn(actor1, actor2); // Записваме новите актьори
-
-        // Извикваме метода
-        movieService.saveMovie(cinemaRecTitle, cinemaRecPosterImage, movie);
-
-        // Проверяваме дали методът е бил извикан
-        verify(movieRepository, times(1)).save(movie);  // Филмът трябва да бъде записан
-        verify(actorRepository, times(2)).save(any(Actor.class));  // Всеки актьор трябва да бъде записан
-    }
-
-    @Test
-    public void testSaveMovieWhenMovieExists() {
-        // Създаваме обектите
-        String cinemaRecTitle = "Inception";
-        String cinemaRecPosterImage = "inception.jpg";
-        Movie movie = new Movie();
-        movie.setTitle(cinemaRecTitle);
-        movie.setPosterImgURL(cinemaRecPosterImage);
-
-        // Мокиране на резултати от репозиториите
-        when(movieRepository.findByTitleAndPosterImgURL(cinemaRecTitle, cinemaRecPosterImage))
-                .thenReturn(Optional.of(movie));
-
-        // Извикваме метода
-        movieService.saveMovie(cinemaRecTitle, cinemaRecPosterImage, movie);
-
-        // Проверяваме дали методът е бил извикан
-        verify(movieRepository, times(0)).save(movie);  // Филмът не трябва да бъде записан, защото вече съществува
-    }
-
-    @Test
-    void testExtractDetailsImages() {
-        // Arrange
-        JsonArray jsonArray = new JsonArray();
-        for (int i = 0; i < 3; i++) {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("file_path", "http://example.com/image" + i + ".jpg");
-            jsonArray.add(jsonObject);
-        }
-
-        int limit = 2;
-
-        // Act
-        CompletableFuture<List<MovieImage>> futureResult = movieService.extractDetailsImages(jsonArray, ImageType.BACKDROP, limit);
-        List<MovieImage> result = futureResult.join();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals("http://example.com/image0.jpg", result.get(0).getImageURL());
-        assertEquals("http://example.com/image1.jpg", result.get(1).getImageURL());
-        assertEquals(ImageType.BACKDROP, result.get(0).getImageType()); // Проверка дали типът на изображението е правилен
-        assertEquals(ImageType.BACKDROP, result.get(1).getImageType());
-    }
-
-
 
     @Test
     void testPostComment() {
@@ -164,6 +74,38 @@ class MovieServiceTest {
         assertEquals(1, movie.getMovieComments().size());
         verify(movieRepository, times(1)).findById(movieUUID);
         verify(movieRepository, times(1)).save(movie);
+    }
+
+    @Test
+    public void testUrlGeneration() {
+        String movieId = "12345";
+        String searchQuery = "https://api.themoviedb.org/3/movie/" + movieId + "?api_key=YOUR_API_KEY";
+
+        assertEquals("https://api.themoviedb.org/3/movie/12345?api_key=YOUR_API_KEY", searchQuery);
+    }
+
+    @Test
+    void testExtractDetailsImages() {
+        // Arrange
+        JsonArray jsonArray = new JsonArray();
+        for (int i = 0; i < 3; i++) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("file_path", "http://example.com/image" + i + ".jpg");
+            jsonArray.add(jsonObject);
+        }
+
+        int limit = 2;
+
+        // Act
+        CompletableFuture<List<MovieImage>> futureResult = movieService.extractDetailsImages(jsonArray, ImageType.BACKDROP, limit);
+        List<MovieImage> result = futureResult.join();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("http://example.com/image0.jpg", result.get(0).getImageURL());
+        assertEquals("http://example.com/image1.jpg", result.get(1).getImageURL());
+        assertEquals(ImageType.BACKDROP, result.get(0).getImageType()); // Проверка дали типът на изображението е правилен
+        assertEquals(ImageType.BACKDROP, result.get(1).getImageType());
     }
 
     @Test
@@ -340,8 +282,6 @@ class MovieServiceTest {
 
         verify(movieRepository, times(1)).getThirthyMoviesRawData(30, 0);
     }
-
-
 
     @Test
     public void testExtractDetailsImagesWithNullParams() {

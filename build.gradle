@@ -41,6 +41,20 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    // Mockito Dependency for mocking
+    testImplementation 'org.mockito:mockito-core:5.2.0'
+
+    // Spring Web MVC for testing the controllers
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // JSON Path for making assertions on JSON responses
+    testImplementation 'com.jayway.jsonpath:json-path:2.6.0'
+
+    // JUnit 5 for writing the tests
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+
+    // JUnit 5 Engine for running the tests
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

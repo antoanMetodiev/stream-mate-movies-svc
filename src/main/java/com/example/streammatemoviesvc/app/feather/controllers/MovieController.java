@@ -1,11 +1,9 @@
 package com.example.streammatemoviesvc.app.feather.controllers;
 
 import com.example.streammatemoviesvc.app.feather.models.dtos.CinemaRecordResponse;
-import com.example.streammatemoviesvc.app.feather.models.dtos.PostCommentRequest;
 import com.example.streammatemoviesvc.app.feather.models.entities.Movie;
 import com.example.streammatemoviesvc.app.feather.models.entities.MovieComment;
 import com.example.streammatemoviesvc.app.feather.services.MovieService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
