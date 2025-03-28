@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.3'
+    id 'org.springframework.boot' version '3.0.0'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -21,14 +21,14 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'jakarta.validation:jakarta.validation-api:3.0.0'
-    implementation 'javax.validation:validation-api:2.0.1.Final'
-    implementation 'org.hibernate.validator:hibernate-validator:6.2.0.Final'
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.0'  // За Jakarta валидация
+    implementation 'org.hibernate.validator:hibernate-validator:6.2.0.Final'  // Hibernate Validator
     implementation 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -39,27 +39,18 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
     implementation 'com.google.code.gson:gson:2.8.9'
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    // Mockito Dependency for mocking
+
+    // Тестови зависимости
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.mockito:mockito-core:5.2.0'
 
-    // Spring Web MVC for testing the controllers
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // JSON Path for making assertions on JSON responses
+    // Тестови зависимости за JSON Path
     testImplementation 'com.jayway.jsonpath:json-path:2.6.0'
 
-    // JUnit 5 for writing the tests
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-
-    // JUnit 5 Engine for running the tests
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
-
+    // За DevTools в разработка
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 

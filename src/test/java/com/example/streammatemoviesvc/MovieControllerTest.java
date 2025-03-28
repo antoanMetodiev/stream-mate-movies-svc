@@ -4,6 +4,7 @@ import com.example.streammatemoviesvc.app.feather.controllers.MovieController;
 import com.example.streammatemoviesvc.app.feather.models.dtos.CinemaRecordResponse;
 import com.example.streammatemoviesvc.app.feather.models.entities.Movie;
 import com.example.streammatemoviesvc.app.feather.models.entities.MovieComment;
+import com.example.streammatemoviesvc.app.feather.repositories.MovieRepository;
 import com.example.streammatemoviesvc.app.feather.services.MovieService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,11 +36,14 @@ public class MovieControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Mock
-    private MovieService movieService;  // Mockito mock
+    @MockBean
+    private MovieRepository movieRepository;
 
-    @InjectMocks
-    private MovieController movieController;  // Auto inject mocked service into controller
+    @MockBean
+    private MovieService movieService; // Мока на MovieService
+
+    @Autowired
+    private MovieController movieController; // Автоматично инжектиране на мока в контролера
 
     @BeforeEach
     public void setup() {

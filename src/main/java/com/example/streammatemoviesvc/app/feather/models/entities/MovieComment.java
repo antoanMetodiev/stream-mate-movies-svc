@@ -7,8 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import javax.validation.constraints.Min;
-import java.time.Instant;
+// Новото
+import jakarta.validation.constraints.Min;
 import java.util.UUID;
 
 @Entity
