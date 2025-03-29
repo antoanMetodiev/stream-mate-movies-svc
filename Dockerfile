@@ -1,32 +1,30 @@
-# Стъпка 1: Избиране на базовия образ
-FROM openjdk:17-jdk-slim AS build
+# Етап 1: Създаване на JAR файла
+FROM ubuntu:latest AS build
 
-# Обновяваме източниците и инсталираме wget и unzip
-RUN apt-get update --allow-releaseinfo-change \
-    && apt-get install -y wget unzip \
-    && wget https://services.gradle.org/distributions/gradle-7.6-bin.zip -P /tmp \
-    && unzip /tmp/gradle-7.6-bin.zip -d /opt \
-    && ln -s /opt/gradle-7.6/bin/gradle /usr/local/bin/gradle \
-    && rm -rf /tmp/*
+RUN apt-get update
+RUN apt-get install openjdk-17-jdk -y
 
-# Копираме build.gradle и settings.gradle
-COPY build.gradle .
-COPY settings.gradle .
+WORKDIR /app
 
-# Изтегляне на зависимостите и изграждане на проекта
-RUN gradle build --no-daemon
+# Копиране на всички файлове от проекта в контейнера
+COPY . .
 
-# Копираме изходния код
-COPY src ./src
+# Дава права за изпълнение на gradlew (ако е нужно)
+RUN chmod +x ./gradlew
 
-# Билдване на приложението
-RUN gradle build --no-daemon
+# Изграждане на JAR файла
+RUN ./gradlew bootJar --no-daemon
 
-# Стъпка 2: Минимален контейнер за изпълнение на Spring Boot приложението
+# Етап 2: Създаване на финален образ
 FROM openjdk:17-jdk-slim
 
-# Копираме JAR файла от build етапа
-COPY --from=build /build/libs/myapp.jar /myapp.jar
+WORKDIR /app
 
-# Стартираме приложението
-CMD ["java", "-jar", "myapp.jar"]
+# Излагане на порта, на който ще работи приложението
+EXPOSE 8080
+
+# Копиране на JAR файла от предишния етап в правилната директория
+COPY --from=build /app/build/libs/*.jar app.jar
+
+# Стартиране на приложението
+ENTRYPOINT ["java", "-jar", "app.jar"]
