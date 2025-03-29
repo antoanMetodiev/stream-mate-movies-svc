@@ -33,11 +33,13 @@ public interface MovieRepository extends JpaRepository<Movie, UUID> {
     long findMoviesCountByGenre(@Param("genre") String genre);
 
     @Query(value =
-            "SELECT * FROM movies_comments " +
+            "SELECT id, comment_text, author_username, author_full_name, author_img_url, " +
+                    "author_id, rating, created_at " +
+                    "FROM movies_comments " +
                     "WHERE movie_id = :currentCinemaRecordId " +
                     "ORDER BY created_at DESC " +
                     "LIMIT 10 OFFSET :offset",
             nativeQuery = true)
-    List<MovieComment> getNext10Comments(@Param("offset") int offset,
-                                         @Param("currentCinemaRecordId") UUID currentCinemaRecordId);
+    List<Object[]> getNext10Comments(@Param("offset") int offset,
+                                     @Param("currentCinemaRecordId") UUID currentCinemaRecordId);
 }
