@@ -10,7 +10,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")  // Позволява всички пътища
-                .allowedOrigins("https://dark-sissy-stream-mate-b1e9d2a2.koyeb.app")  // Разрешава само даден домейн
+                .allowedOrigins("https://dark-sissy-stream-mate-b1e9d2a2.koyeb.app", "http://localhost:8080")  // Разрешава само даден домейн
                 .allowedMethods("GET", "POST", "PUT", "DELETE")  // Разрешава само определени методи
                 .allowedHeaders("*");  // Позволява всички хедъри
     }
