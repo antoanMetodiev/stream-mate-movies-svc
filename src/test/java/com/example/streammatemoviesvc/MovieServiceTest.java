@@ -113,17 +113,27 @@ class MovieServiceTest {
         // Arrange
         int order = 2;
         UUID movieId = UUID.randomUUID();
-        List<MovieComment> mockComments = List.of(new MovieComment(), new MovieComment());
+        int offset = (order - 1) * 10;
 
-        when(movieRepository.getNext10Comments(10, movieId)).thenReturn(mockComments);
+        // Създаваме mock лист с Object[], където всеки Object[] представя MovieComment
+        List<Object[]> mockComments = List.of(
+                new Object[]{UUID.randomUUID(), "Great movie!", "user123", "John Doe", "img_url", UUID.randomUUID(), 4.5, "2024-03-29 12:00:00"},
+                new Object[]{UUID.randomUUID(), "Not bad!", "user456", "Jane Doe", "img_url2", UUID.randomUUID(), 3.8, "2024-03-28 14:30:00"}
+        );
+
+        when(movieRepository.getNext10Comments(offset, movieId)).thenReturn(mockComments);
 
         // Act
         List<MovieComment> result = movieService.getNext10Comments(order, movieId);
 
         // Assert
         assertEquals(mockComments.size(), result.size());
-        verify(movieRepository, times(1)).getNext10Comments(10, movieId);
+        assertEquals("Great movie!", result.get(0).getCommentText());
+        assertEquals("Not bad!", result.get(1).getCommentText());
+
+        verify(movieRepository, times(1)).getNext10Comments(offset, movieId);
     }
+
 
     @Test
     void testDeleteMovieComment() {
