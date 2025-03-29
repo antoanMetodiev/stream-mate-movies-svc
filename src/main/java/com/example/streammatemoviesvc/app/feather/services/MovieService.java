@@ -150,8 +150,26 @@ public class MovieService {
 
     public List<MovieComment> getNext10Comments(int order, UUID currentCinemaRecordId) {
         int offset = (order - 1) * 10;  // Преобразуване на order в offset
-        List<MovieComment> next10Comments = this.movieRepository.getNext10Comments(offset, currentCinemaRecordId);
-        return next10Comments;
+        List<Object[]> next10Comments = this.movieRepository.getNext10Comments(offset, currentCinemaRecordId);
+
+        List<MovieComment> movieComments = new ArrayList<>();
+
+        for (Object[] comment : next10Comments) {
+            MovieComment movieComment = new MovieComment();
+
+            movieComment.setId((UUID) comment[0]);
+            movieComment.setCommentText((String) comment[1]);
+            movieComment.setAuthorUsername((String) comment[2]);
+            movieComment.setAuthorFullName((String) comment[3]);
+            movieComment.setAuthorImgURL((String) comment[4]);
+            movieComment.setAuthorId((UUID) comment[5]);
+            movieComment.setRating((Double) comment[6]);
+            movieComment.setCreatedAt((String) comment[7]);
+
+            movieComments.add(movieComment);
+        }
+
+        return movieComments;
     }
 
     @Transactional
