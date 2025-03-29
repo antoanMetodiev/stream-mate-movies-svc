@@ -50,6 +50,8 @@ dependencies {
     // Тестови зависимости за JSON Path
     testImplementation 'com.jayway.jsonpath:json-path:2.6.0'
 
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     // За DevTools в разработка
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
